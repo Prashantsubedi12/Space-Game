@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ORBITAL SURVIVAL: The Vanishing Point</title>
+    <style>
+        /* --- CSS STYLING --- */
+        @import url('https://fonts.googleapis.com/css2?family=Rajdhani:wght@500;700;900&display=swap');
+
+        body {
+            margin: 0;
+            overflow: hidden;
+            background-color: #000;
+            font-family: 'Rajdhani', sans-serif;
+            color: #fff;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* UI OVERLAY */
+        #ui-layer {
+            position: absolute;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            text-align: center;
+        }
+
+        /* START SCREEN */
+        #start-screen {
+            background: rgba(0, 20, 40, 0.95);
+            border: 2px solid #00aaff;
+            padding: 50px;
+            max-width: 600px;
+            border-radius: 10px;
+            box-shadow: 0 0 50px #00aaff;
+            pointer-events: auto;
+            z-index: 200;
+        }
+
+        h1 {
+            font-size: 3.5rem;
+            margin: 0;
+            color: #00aaff;
+            text-transform: uppercase;
+            letter-spacing: 5px;
+            text-shadow: 0 0 20px #00aaff;
+        }
+
+        .lore {
+            font-size: 1.3rem;
+            color: #ccc;
+            margin: 20px 0;
+            line-height: 1.6;
+        }
+
+        .press-start {
+            margin-top: 30px;
+            font-size: 1.5rem;
+            animation: blink 1s infinite;
+            color: #fff;
+            font-weight: bold;
+            cursor: pointer;
+            border: 1px solid #fff;
+            padding: 10px;
+            display: inline-block;
+        }
+
+        .press-start:hover { background: #fff; color: #000; }
+
+        /* QUIZ HUD */
+        #quiz-hud {
+            display: none;
+            background: rgba(0, 0, 0, 0.9);
+            border: 3px solid #ff3366; /* Danger Red */
+            padding: 40px;
+            width: 500px;
+            pointer-events: auto;
+            border-radius: 20px;
+            box-shadow: 0 0 80px rgba(255, 51, 102, 0.6);
+            position: relative;
+            z-index: 100;
+        }
+
+        #enemy-name-display {
+            font-size: 2.5rem;
+            color: #ff3366;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            font-weight: 900;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #ff3366;
+        }
+
+        .question-text {
+            font-size: 1.4rem;
+            margin-bottom: 30px;
+            color: #eee;
+        }
+
+        input[type="text"] {
+            background: #111;
+            border: 2px solid #00aaff;
+            color: #00aaff;
+            font-family: 'Rajdhani', sans-serif;
+            font-size: 2.2rem;
+            text-align: center;
+            width: 100%;
+            padding: 15px;
+            outline: none;
+            border-radius: 5px;
+            box-shadow: 0 0 20px rgba(0, 170, 255, 0.2);
+            text-transform: uppercase;
+        }
+        
+        input[type="text"]:focus {
+            box-shadow: 0 0 30px rgba(0, 170, 255, 0.6);
+        }
+
+        .hint-text {
+            font-size: 1rem;
+            color: #888;
+            margin-top: 15px;
+            letter-spacing: 1px;
+            font-style: italic;
+        }
+
+        /* END SCREEN */
+        #end-screen {
+            display: none;
+            flex-direction: column;
+            pointer-events: auto;
+            background: rgba(0,0,0,0.95);
+            padding: 60px;
+            border-radius: 20px;
+            border: 1px solid #fff;
+            z-index: 300;
+        }
+
+        /* ANIMATIONS */
+        @keyframes blink { 50% { opacity: 0.5; } }
+        
+        .shake {
+            animation: shake 0.5s cubic-bezier(.36,.07,.19,.97) both;
+        }
+
+        @keyframes shake {
+            10%, 90% { transform: translate3d(-4px, 0, 0); }
+            20%, 80% { transform: translate3d(4px, 0, 0); }
+            30%, 50%, 70% { transform: translate3d(-8px, 0, 0); }
+            40%, 60% { transform: translate3d(8px, 0, 0); }
+        }
+
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <canvas id="gameCanvas"></canvas>
+
+    <div id="ui-layer">
+        
+        <div id="start-screen">
+            <h1>Orbital Survival</h1>
+            <p class="lore">
+                PILOT REQUIRED.<br><br>
+                Earth is drifting through hostile space. 
+                Identify planets and anomalies to calculate safe passage.
+                <br><br>
+                <span style="color:#ff3366">WARNING: NO DATA AVAILABLE.</span><br>
+                You must rely on your own knowledge.
+            </p>
+            <div class="press-start" onclick="startGame()">PRESS ENTER TO LAUNCH</div>
+        </div>
+
+        <div id="quiz-hud">
+            <div id="enemy-name-display">TARGET LOCKED</div>
+            <div class="question-text" id="q-text">Awaiting Input...</div>
+            <input type="text" id="answer-input" autocomplete="off" placeholder="TYPE ANSWER HERE">
+            <div class="hint-text" id="hint-text"></div>
+            <p style="font-size:0.9rem; margin-top:20px; color:#666;">PRESS ENTER TO SUBMIT</p>
+        </div>
+
+        <div id="end-screen">
+            <h1 id="end-title">GAME OVER</h1>
+            <p id="end-reason" class="lore">Earth was destroyed.</p>
+            <div class="press-start" onclick="location.reload()">RESTART SYSTEM</div>
+        </div>
+
+    </div>
+</div>
+
+<script>
+/**
+ * ORBITAL SURVIVAL ENGINE - FINAL BUILD
+ */
+
+// --- CONFIGURATION ---
+const canvas = document.getElementById('gameCanvas');
+const ctx = canvas.getContext('2d');
+const gameContainer = document.getElementById('game-container');
+let width, height;
+
+// --- DOM ELEMENTS ---
+const startScreen = document.getElementById('start-screen');
+const quizHud = document.getElementById('quiz-hud');
+const endScreen = document.getElementById('end-screen');
+const inputField = document.getElementById('answer-input');
+const enemyNameDisplay = document.getElementById('enemy-name-display');
+const qText = document.getElementById('q-text');
+const hintText = document.getElementById('hint-text');
+
+// --- GAME STATE ---
+const STATE = {
+    MENU: 0,
+    TRAVEL: 1,
+    ENCOUNTER_PAUSE: 2,
+    ANIMATING_SUCCESS: 3,
+    ANIMATING_FAIL: 4,
+    GAME_OVER: 5
+};
+
+let gameState = STATE.MENU;
+let levelIndex = 0;
+let bossQuestionIndex = 0;
+let explosionParticles = [];
+let explosionTimer = 0;
+
+// --- LEVELS DATA ---
+const levels = [
+    {
+        name: "MARS",
+        type: "mars",
+        size: 70,
+        answer: "225",
+        question: "Distance from Earth (Million km)?"
+    },
+    {
+        name: "JUPITER",
+        type: "jupiter",
+        size: 130,
+        answer: "778",
+        question: "Distance from Earth (Million km)?"
+    },
+    {
+        name: "SUPERMASSIVE BLACK HOLE",
+        type: "boss",
+        size: 180,
+        questions: [
+            { q: "Distance from Earth (Light Years)?", a: "26000" },
+            { q: "Age (Billion Years)?", a: "13" },
+            { q: "Name of this Black Hole?", a: "sagittarius a*" }
+        ]
+    }
+];
+
+// --- OBJECTS ---
+
+// 1. EARTH
+const earth = {
+    x: -300, 
+    y: 0,
+    targetX: 0,
+    r: 45,
+    angle: 0,
+    visible: true,
+    draw: function() {
+        if (!this.visible) return;
+        ctx.save();
+        ctx.translate(this.x, this.y);
+        ctx.rotate(this.angle);
+
+        // Atmosphere Glow
+        ctx.shadowBlur = 25;
+        ctx.shadowColor = "#00aaff";
+
+        // Ocean Gradient
+        let grad = ctx.createRadialGradient(-10, -10, 5, 0, 0, this.r);
+        grad.addColorStop(0, "#4facfe");
+        grad.addColorStop(1, "#00f2fe");
+        
+        ctx.beginPath();
+        ctx.arc(0, 0, this.r, 0, Math.PI * 2);
+        ctx.fillStyle = grad;
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // Continents
+        ctx.fillStyle = "#2ecc71";
+        ctx.beginPath(); ctx.arc(-15, -15, 12, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(20, 10, 18, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.arc(5, 25, 8, 0, Math.PI*2); ctx.fill();
+
+        // Clouds
+        ctx.fillStyle = "rgba(255,255,255,0.4)";
+        ctx.beginPath(); ctx.ellipse(-20, 10, 20, 5, 0, 0, Math.PI*2); ctx.fill();
+        ctx.beginPath(); ctx.ellipse(20, -15, 25, 6, 0, 0, Math.PI*2); ctx.fill();
+
+        // Shadow
+        let shadow = ctx.createRadialGradient(-15, -15, this.r, 0, 0, this.r + 10);
+        shadow.addColorStop(0, 'transparent');
+        shadow.addColorStop(1, 'rgba(0,0,0,0.7)');
+        ctx.fillStyle = shadow;
+        ctx.beginPath(); ctx.arc(0, 0, this.r, 0, Math.PI*2); ctx.fill();
+
+        ctx.restore();
+    }
+};
+
+// 2. ENEMY
+const enemy = {
+    x: 0, 
+    y: 0,
+    data: null,
+    angle: 0,
+    draw: function() {
+        if (!this.data) return;
+
+        ctx.save();
+        ctx.translate(this.x, this.y);
+
+        if (this.data.type === "mars") {
+            let grad = ctx.createRadialGradient(-20, -20, 10, 0, 0, this.data.size);
+            grad.addColorStop(0, "#ff7e5f");
+            grad.addColorStop(1, "#8b0000");
+            
+            ctx.beginPath(); ctx.arc(0, 0, this.data.size, 0, Math.PI*2);
+            ctx.fillStyle = grad; ctx.fill();
+
+            // Craters
+            ctx.fillStyle = "rgba(100, 0, 0, 0.4)";
+            ctx.beginPath(); ctx.arc(-20, -10, 10, 0, Math.PI*2); ctx.fill();
+            ctx.beginPath(); ctx.arc(30, 20, 15, 0, Math.PI*2); ctx.fill();
+
+            // Atmosphere
+            ctx.shadowBlur = 20; ctx.shadowColor = "#ff4d4d";
+            ctx.strokeStyle = "rgba(255, 100, 100, 0.3)"; ctx.lineWidth = 2; ctx.stroke(); ctx.shadowBlur = 0;
+        }
+        else if (this.data.type === "jupiter") {
+            ctx.beginPath(); ctx.arc(0, 0, this.data.size, 0, Math.PI*2); ctx.clip();
+            ctx.fillStyle = "#d4a373"; ctx.fill();
+            
+            // Stripes
+            ctx.fillStyle = "#bc6c25";
+            ctx.fillRect(-this.data.size, -40, this.data.size*2, 20);
+            ctx.fillRect(-this.data.size, 30, this.data.size*2, 15);
+            ctx.fillStyle = "#e9c46a";
+            ctx.fillRect(-this.data.size, -10, this.data.size*2, 20);
+
+            // Red Spot
+            ctx.fillStyle = "#9b2226";
+            ctx.beginPath(); ctx.ellipse(20, 10, 25, 15, 0, 0, Math.PI*2); ctx.fill();
+
+            // Shadow
+            ctx.globalCompositeOperation = 'source-atop';
+            let shadow = ctx.createRadialGradient(-30, -30, this.data.size, 0, 0, this.data.size+20);
+            shadow.addColorStop(0, 'transparent'); shadow.addColorStop(1, 'rgba(0,0,0,0.8)');
+            ctx.fillStyle = shadow; ctx.beginPath(); ctx.arc(0, 0, this.data.size, 0, Math.PI*2); ctx.fill();
+        }
+        else if (this.data.type === "boss") {
+            this.angle -= 0.01;
+            ctx.rotate(this.angle);
+
+            let diskGrad = ctx.createRadialGradient(0, 0, this.data.size * 0.4, 0, 0, this.data.size * 1.4);
+            diskGrad.addColorStop(0.2, "transparent");
+            diskGrad.addColorStop(0.4, "#ff0055");
+            diskGrad.addColorStop(0.6, "#ff9900");
+            diskGrad.addColorStop(1, "transparent");
+            
+            ctx.beginPath(); ctx.arc(0, 0, this.data.size * 1.4, 0, Math.PI*2);
+            ctx.fillStyle = diskGrad; ctx.fill();
+            
+            ctx.beginPath(); ctx.arc(0, 0, this.data.size * 0.6, 0, Math.PI*2);
+            ctx.fillStyle = "#000"; ctx.shadowBlur = 20; ctx.shadowColor = "#ff0055"; ctx.fill(); ctx.shadowBlur = 0;
+            
+            ctx.strokeStyle = "#fff"; ctx.lineWidth = 3; ctx.beginPath(); ctx.arc(0, 0, this.data.size * 0.65, 0, Math.PI*2); ctx.stroke();
+        }
+
+        ctx.restore();
+
+        if (gameState === STATE.ENCOUNTER_PAUSE || gameState === STATE.ANIMATING_SUCCESS || gameState === STATE.ANIMATING_FAIL) {
+            ctx.font = "bold 24px Rajdhani";
+            ctx.fillStyle = "#ff3366";
+            ctx.textAlign = "center";
+            ctx.shadowBlur = 10; ctx.shadowColor = "#000";
+            ctx.fillText(this.data.name, this.x, this.y - this.data.size - 30);
+            ctx.shadowBlur = 0;
+        }
+    }
+};
+
+// 3. EXPLOSION PARTICLE SYSTEM
+class Particle {
+    constructor(x, y) {
+        this.x = x;
+        this.y = y;
+        this.size = Math.random() * 5 + 2;
+        this.speedX = (Math.random() - 0.5) * 15;
+        this.speedY = (Math.random() - 0.5) * 15;
+        this.color = `hsl(${Math.random() * 60 + 10}, 100%, 50%)`; // Fire colors
+        this.life = 1.0;
+        this.decay = Math.random() * 0.01 + 0.005;
+    }
+    update() {
+        this.x += this.speedX;
+        this.y += this.speedY;
+        this.speedX *= 0.95; 
+        this.speedY *= 0.95;
+        this.life -= this.decay;
+    }
+    draw() {
+        ctx.fillStyle = this.color;
+        ctx.globalAlpha = this.life;
+        ctx.beginPath();
+        ctx.arc(this.x, this.y, this.size, 0, Math.PI*2);
+        ctx.fill();
+        ctx.globalAlpha = 1;
+    }
+}
+
+// 4. STARS
+let stars = [];
+function initStars() {
+    stars = [];
+    for(let i=0; i<400; i++) {
+        stars.push({
+            x: Math.random() * width,
+            y: Math.random() * height,
+            size: Math.random() * 2,
+            speed: Math.random() * 4 + 0.5
+        });
+    }
+}
+
+// --- INITIALIZATION ---
+function init() {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    initStars();
+    earth.y = height / 2;
+    earth.targetX = width * 0.2; 
+    loop();
+}
+
+// --- LOGIC ---
+function startGame() {
+    startScreen.style.display = 'none';
+    gameState = STATE.TRAVEL;
+    loadLevel(0);
+}
+
+function loadLevel(idx) {
+    if (idx >= levels.length) {
+        endGame(true);
+        return;
+    }
+    levelIndex = idx;
+    const lvl = levels[idx];
+    
+    enemy.data = lvl;
+    enemy.x = width + 300; 
+    enemy.y = height / 2;
+    earth.x = -200;
+    earth.visible = true;
+    earth.r = 45;
+    
+    bossQuestionIndex = 0;
+}
+
+function triggerEncounter() {
+    gameState = STATE.ENCOUNTER_PAUSE;
+    quizHud.style.display = 'block';
+    inputField.value = "";
+    inputField.focus();
+    updateQuizUI();
+}
+
+function updateQuizUI() {
+    const lvl = levels[levelIndex];
+    enemyNameDisplay.innerText = lvl.name;
+    
+    let ans = "";
+    if (lvl.type === "boss") {
+        qText.innerText = lvl.questions[bossQuestionIndex].q;
+        ans = lvl.questions[bossQuestionIndex].a;
+    } else {
+        qText.innerText = lvl.question;
+        ans = lvl.answer;
+    }
+
+    // --- NEW: DISPLAY FIRST LETTER HINT ---
+    const firstChar = ans.charAt(0).toUpperCase();
+    hintText.innerText = `HINT: STARTS WITH "${firstChar}"...`;
+}
+
+function checkAnswer() {
+    const playerAns = inputField.value.trim().toLowerCase();
+    const lvl = levels[levelIndex];
+    let correct = false;
+
+    if (lvl.type === "boss") {
+        if (playerAns === lvl.questions[bossQuestionIndex].a.toLowerCase()) {
+            bossQuestionIndex++;
+            if (bossQuestionIndex >= lvl.questions.length) {
+                correct = true;
+            } else {
+                updateQuizUI();
+                inputField.value = "";
+                quizHud.style.borderColor = "#0f0";
+                setTimeout(() => quizHud.style.borderColor = "#ff3366", 200);
+                return; 
+            }
+        }
+    } else {
+        if (playerAns === lvl.answer) correct = true;
+    }
+
+    quizHud.style.display = 'none';
+
+    if (correct) {
+        gameState = STATE.ANIMATING_SUCCESS;
+    } else {
+        gameState = STATE.ANIMATING_FAIL;
+        // Trigger Explosion Setup
+        explosionParticles = [];
+        explosionTimer = 0;
+        for(let i=0; i<150; i++) {
+            explosionParticles.push(new Particle(earth.x, earth.y));
+        }
+        gameContainer.classList.add('shake');
+        setTimeout(() => gameContainer.classList.remove('shake'), 500);
+    }
+}
+
+function endGame(victory) {
+    gameState = STATE.GAME_OVER;
+    endScreen.style.display = 'flex';
+    const title = document.getElementById('end-title');
+    const reason = document.getElementById('end-reason');
+    
+    if (victory) {
+        title.innerText = "MISSION COMPLETE";
+        title.style.color = "#00ffcc";
+        reason.innerText = "Earth has escaped the galaxy. Humanity is safe.";
+    } else {
+        title.innerText = "GAME OVER";
+        title.style.color = "#ff3366";
+        reason.innerText = "Earth was consumed by the void.";
+    }
+}
+
+window.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        if (gameState === STATE.MENU) startGame();
+        else if (gameState === STATE.ENCOUNTER_PAUSE) checkAnswer();
+        else if (gameState === STATE.GAME_OVER) location.reload();
+    }
+});
+window.addEventListener('resize', () => {
+    width = window.innerWidth;
+    height = window.innerHeight;
+    canvas.width = width;
+    canvas.height = height;
+    earth.y = height/2;
+    if(gameState !== STATE.GAME_OVER) enemy.y = height/2;
+});
+
+
+// --- MAIN LOOP ---
+function loop() {
+    ctx.fillStyle = '#000';
+    ctx.fillRect(0, 0, width, height);
+
+    // 1. STARS
+    ctx.fillStyle = "#fff";
+    stars.forEach(s => {
+        let speedMult = 1;
+        if (gameState === STATE.TRAVEL) speedMult = 5;
+        if (gameState === STATE.ENCOUNTER_PAUSE) speedMult = 0.2;
+        if (gameState === STATE.ANIMATING_SUCCESS) speedMult = 25;
+
+        s.x -= s.speed * speedMult;
+        if (s.x < 0) s.x = width;
+
+        ctx.beginPath();
+        if (gameState === STATE.ANIMATING_SUCCESS) ctx.fillRect(s.x, s.y, s.size * 15, s.size);
+        else { ctx.arc(s.x, s.y, s.size, 0, Math.PI*2); ctx.fill(); }
+    });
+
+    // 2. STATES
+    if (gameState === STATE.TRAVEL) {
+        if (earth.x < earth.targetX) earth.x += 4;
+        enemy.x -= 8;
+        earth.angle += 0.005;
+        const stopDist = earth.r + enemy.data.size + 100;
+        if (enemy.x - earth.x < stopDist) triggerEncounter();
+    }
+    else if (gameState === STATE.ENCOUNTER_PAUSE) {
+        earth.angle += 0.002;
+    }
+    else if (gameState === STATE.ANIMATING_SUCCESS) {
+        earth.x += 15; enemy.x -= 5;
+        if (earth.x > width + 200) {
+            gameState = STATE.TRAVEL;
+            loadLevel(levelIndex + 1);
+        }
+    }
+    else if (gameState === STATE.ANIMATING_FAIL) {
+        // --- DESTRUCTION ANIMATION LOGIC ---
+        
+        if (enemy.data.type === "boss") {
+            // Spaghettification
+            earth.x += (enemy.x - earth.x) * 0.05;
+            ctx.save();
+            ctx.translate(earth.x, earth.y);
+            ctx.scale(1.5, 0.1); 
+            ctx.beginPath(); ctx.arc(0,0, earth.r, 0, Math.PI*2); ctx.fillStyle = "#00aaff"; ctx.fill();
+            ctx.restore();
+            earth.r *= 0.95;
+            if (earth.r < 1) endGame(false);
+            enemy.draw();
+        } 
+        else {
+            // PLANET COLLISION
+            earth.x += 10; // Fast impact
+            
+            // Check Collision
+            const dist = enemy.x - earth.x;
+            const collisionPoint = earth.r + enemy.data.size;
+            
+            if (dist < collisionPoint) {
+                // HIDE EARTH
+                earth.visible = false; 
+                
+                // RENDER PARTICLES
+                explosionParticles.forEach(p => {
+                    p.update();
+                    p.draw();
+                });
+
+                // Count up timer
+                explosionTimer++;
+                
+                if (explosionTimer > 120) {
+                    endGame(false);
+                }
+            }
+            
+            enemy.draw();
+        }
+    }
+
+    // 3. DRAW EARTH & ENEMY
+    if (gameState !== STATE.ANIMATING_FAIL || enemy.data.type !== "boss") {
+        if (earth.visible) earth.draw();
+    }
+    if (gameState === STATE.ANIMATING_FAIL && enemy.data.type !== "boss" && !earth.visible) {
+        enemy.draw(); 
+    } else if (gameState !== STATE.ANIMATING_FAIL) {
+        enemy.draw();
+    }
+
+    requestAnimationFrame(loop);
+}
+
+init();
+
+</script>
+</body>
+</html>

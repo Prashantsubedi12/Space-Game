@@ -1,0 +1,148 @@
+/* RESET & CORE */
+* { box-sizing: border-box; }
+body {
+    margin: 0;
+    overflow: hidden;
+    background-color: #050505;
+    font-family: 'Courier New', Courier, monospace;
+    color: #00ffcc; /* SpaceX Teal */
+    height: 100vh;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+/* STARFIELD CANVAS */
+#starfield {
+    position: absolute;
+    top: 0; left: 0;
+    z-index: 0;
+}
+
+/* THE BLACK HOLE */
+.black-hole-container {
+    position: absolute;
+    z-index: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+.black-hole {
+    width: 150px;
+    height: 150px;
+    background: #000;
+    border-radius: 50%;
+    position: relative;
+    z-index: 10;
+    box-shadow: 
+        0 0 20px #000, 
+        0 0 40px rgba(100, 0, 255, 0.3); /* Inner Shadow */
+}
+
+/* The Glowing Ring (Accretion Disk) */
+.accretion-disk {
+    position: absolute;
+    width: 220px;
+    height: 220px;
+    border-radius: 50%;
+    background: conic-gradient(
+        from 0deg, 
+        transparent 0%, 
+        #ff0055 20%, /* Magma Red */
+        #aa00ff 50%, /* Space Purple */
+        #00ccff 80%, /* Blue Shift */
+        transparent 100%
+    );
+    filter: blur(10px);
+    animation: spin 2s linear infinite;
+    opacity: 0.8;
+}
+
+/* UI LAYER */
+.ui-layer {
+    position: absolute;
+    z-index: 100;
+    width: 100%;
+    height: 100%;
+    pointer-events: none; /* Let clicks pass through to canvas if needed */
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    align-items: center;
+    padding: 40px;
+}
+
+/* Enable pointer events only for buttons/inputs */
+.ui-layer * { pointer-events: auto; }
+
+.title {
+    font-size: 3rem;
+    letter-spacing: 10px;
+    text-shadow: 0 0 20px #00ffcc;
+    margin-top: 20px;
+}
+
+.controls {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+input {
+    background: rgba(0, 0, 0, 0.7);
+    border: 1px solid #00ffcc;
+    color: #fff;
+    padding: 15px;
+    font-family: inherit;
+    font-size: 1.2rem;
+    width: 300px;
+    outline: none;
+}
+
+button {
+    background: #00ffcc;
+    color: #000;
+    border: none;
+    padding: 15px 30px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: 0.2s;
+}
+
+button:hover {
+    background: #fff;
+    box-shadow: 0 0 15px #fff;
+}
+
+.danger-btn {
+    background: transparent;
+    border: 1px solid #ff0055;
+    color: #ff0055;
+    margin-bottom: 20px;
+    font-size: 0.8rem;
+}
+
+.danger-btn:hover {
+    background: #ff0055;
+    color: #fff;
+    box-shadow: 0 0 20px #ff0055;
+}
+
+/* ANIMATIONS */
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* The Spaghettification Effect */
+.sucked-in {
+    transition: all 1.5s cubic-bezier(0.55, 0.085, 0.68, 0.53); /* Ease-in-back */
+    position: absolute;
+    pointer-events: none;
+}
+
+/* Classes to trigger JS animations */
+.vanishing {
+    opacity: 0;
+}
